@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	ctrl "savannah-go/controllers"
 	m "savannah-go/models"
 
@@ -10,12 +11,23 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
+const (
+	MysqlURL = "sql12230610:fp75SKb4ud@tcp(sql12.freemysqlhosting.net:3306)/sql12230610?charset=utf8&parseTime=True&loc=Local"
+)
+
 var db *gorm.DB
 
 func init() {
 	//open a db connection
 	var err error
-	db, err = gorm.Open("mysql", "root:12345678@/savannah-go?charset=utf8&parseTime=True&loc=Local")
+	uri := os.Getenv("MYSQL_URL")
+
+	if len(uri) == 0 {
+		uri = MysqlURL
+	}
+	fmt.Println(uri)
+
+	db, err = gorm.Open("mysql", uri)
 	if err != nil {
 		panic("failed to connect database")
 	}
