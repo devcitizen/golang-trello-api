@@ -12,36 +12,13 @@ import (
 )
 
 const (
-	MysqlURL = "sql12230610:fp75SKb4ud@tcp(sql12.freemysqlhosting.net:3306)/sql12230610?charset=utf8&parseTime=True&loc=Local"
+	MysqlURL = "root:12345678@/savannah-go?charset=utf8&parseTime=True&loc=Local"
 )
 
 var db *gorm.DB
 
-func init() {
-	//open a db connection
-	var err error
-	uri := os.Getenv("MYSQL_URL")
-
-	if len(uri) == 0 {
-		uri = MysqlURL
-	}
-	fmt.Println(uri)
-
-	db, err = gorm.Open("mysql", uri)
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	var user m.User
-	var role m.Role
-	var sprint m.Sprint
-	var project m.Project
-	var backlog m.Backlog
-
-	db.AutoMigrate(&user, &role, &sprint, &project, &backlog)
-}
-
 func main() {
+
 	router := gin.Default()
 	router.Use(func(context *gin.Context) {
 		// add header Access-Control-Allow-Origin
@@ -60,6 +37,27 @@ func main() {
 		context.Next()
 	})
 
+	//open a db connection
+	var err error
+	uri := os.Getenv("MYSQL_URL")
+
+	if len(uri) == 0 {
+		uri = MysqlURL
+	}
+
+	db, err := gorm.Open("mysql", uri)
+	if err != nil {
+		panic("failed to connect database")
+	}
+	router.Use(ConnectMiddleware(db))
+
+	var user m.User
+	var role m.Role
+	var sprint m.Sprint
+	var project m.Project
+	var backlog m.Backlog
+
+	db.AutoMigrate(&user, &role, &sprint, &project, &backlog)
 	users := router.Group("/api/v1/users")
 	{
 		users.GET("/", ctrl.GetUsers)
@@ -83,4 +81,11 @@ func main() {
 		})
 	})
 	router.Run() // listen and serve on 0.0.0.0:8080
+}
+
+func ConnectMiddleware(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("databaseConn", db)
+		c.Next()
+	}
 }

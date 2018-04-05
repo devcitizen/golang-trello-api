@@ -26,10 +26,9 @@ type (
 )
 
 func GetUsers(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
 
 	var users []m.User
@@ -49,14 +48,12 @@ func GetUsers(c *gin.Context) {
 }
 
 func CreateUser(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
+	}
 	var user users
 	var role m.Role
-	defer db.Close()
-
-	if err != nil {
-		fmt.Println(err)
-	}
 
 	if c.ShouldBindWith(&user, binding.JSON) == nil {
 		if errs := validator.Validate(user); errs != nil {
@@ -86,10 +83,9 @@ func CreateUser(c *gin.Context) {
 }
 
 func GetUser(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
 	var user m.User
 	userID := c.Param("id")
@@ -105,10 +101,9 @@ func GetUser(c *gin.Context) {
 }
 
 func UpdateUser(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
 
 	var user m.User
@@ -128,10 +123,9 @@ func UpdateUser(c *gin.Context) {
 }
 
 func DeleteUser(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
 	var user m.User
 	userID := c.Param("id")

@@ -12,10 +12,9 @@ import (
 )
 
 func GetRoles(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
 
 	var roles []m.Role
@@ -30,11 +29,9 @@ func GetRoles(c *gin.Context) {
 }
 
 func GetRole(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
 
 	var role m.Role
@@ -50,13 +47,11 @@ func GetRole(c *gin.Context) {
 }
 
 func PostRole(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-	var role m.Role
-
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
+	var role m.Role
 
 	if c.ShouldBindWith(&role, binding.JSON) == nil {
 		now := time.Now()
@@ -81,10 +76,9 @@ func PostRole(c *gin.Context) {
 }
 
 func DeleteRole(c *gin.Context) {
-	db, err := gorm.Open("mysql", conn)
-	defer db.Close()
-	if err != nil {
-		fmt.Println(err)
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
 	}
 	var role m.Role
 	roleID := c.Param("id")
