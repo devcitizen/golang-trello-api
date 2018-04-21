@@ -4,6 +4,11 @@
 	"GodepVersion": "v80",
 	"Deps": [
 		{
+			"ImportPath": "github.com/appleboy/gin-jwt",
+			"Comment": "v2.3.1-17-gb98b512",
+			"Rev": "b98b512ed67b501994175b49a1adfc709b8702d5"
+		},
+		{
 			"ImportPath": "github.com/gin-contrib/sse",
 			"Rev": "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
 		},
