@@ -6,8 +6,8 @@ import (
 	"os"
 	ctrl "savannah-go/controllers"
 	m "savannah-go/models"
+	u "savannah-go/utils"
 	"time"
-	u "zaraaya/utils"
 
 	"github.com/appleboy/gin-jwt"
 	"github.com/gin-contrib/cors"
