@@ -1,7 +1,7 @@
 {
 	"ImportPath": "savannah-go",
-	"GoVersion": "go1.9.4",
-	"GodepVersion": "v80",
+	"GoVersion": "go1.9",
+	"GodepVersion": "v81",
 	"Deps": [
 		{
 			"ImportPath": "github.com/appleboy/gin-jwt",
