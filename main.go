@@ -2,10 +2,15 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	ctrl "savannah-go/controllers"
 	m "savannah-go/models"
+	"time"
+	u "zaraaya/utils"
 
+	"github.com/appleboy/gin-jwt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -16,27 +21,35 @@ const (
 )
 
 var db *gorm.DB
+var user m.User
+var role m.Role
+var sprint m.Sprint
+var project m.Project
+var backlog m.Backlog
+
+func helloHandler(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	c.JSON(200, gin.H{
+		"userID": claims["id"],
+		"text":   "Hello World.",
+	})
+}
 
 func main() {
-
-	router := gin.Default()
-	router.Use(func(context *gin.Context) {
-		// add header Access-Control-Allow-Origin
-		context.Writer.Header().Add("Access-Control-Allow-Origin", "*")
-		context.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
-		context.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		context.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
-		context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if context.Request.Method == "OPTIONS" {
-			fmt.Println("OPTIONS")
-			context.AbortWithStatus(200)
-		} else {
-			context.Next()
-		}
-		context.Next()
-	})
-
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:  []string{"http://localhost:3002"},
+		AllowMethods:  []string{"PUT", "PATCH", "GET", "POST", "DELETE"},
+		AllowHeaders:  []string{"Origin", "Authorization", "Content-Type", "Access-Control-Allow-Origin", "ID-Company", "ID-Store", "ID-Merchant"},
+		ExposeHeaders: []string{"Content-Length"},
+	}))
+	r.GET("/ping", ping)
 	//open a db connection
 	var err error
 	uri := os.Getenv("MYSQL_URL")
@@ -49,38 +62,62 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	router.Use(ConnectMiddleware(db))
+	// the jwt middleware
 
-	var user m.User
-	var role m.Role
-	var sprint m.Sprint
-	var project m.Project
-	var backlog m.Backlog
-
-	db.AutoMigrate(&user, &role, &sprint, &project, &backlog)
-	users := router.Group("/api/v1/users")
+	v1 := r.Group("/api/v1")
+	v1.Use(ConnectMiddleware(db))
 	{
-		users.GET("/", ctrl.GetUsers)
-		users.POST("/", ctrl.CreateUser)
-		users.GET("/:id", ctrl.GetUser)
-		users.PUT("/:id", ctrl.UpdateUser)
-		users.DELETE("/:id", ctrl.DeleteUser)
+		authMiddleware := &jwt.GinJWTMiddleware{
+			Realm:      "SAVANNAH",
+			Key:        []byte("secret key"),
+			Timeout:    time.Hour,
+			MaxRefresh: time.Hour,
+			Authenticator: func(email string, password string, c *gin.Context) (string, bool) {
+
+				if err := db.Where("email = ?", email).First(&user).Error; err == nil {
+					fmt.Println(email)
+					match := u.CheckPasswordHash(password, user.Password)
+					if match {
+						return email, true
+					}
+				}
+
+				return email, false
+			},
+			Unauthorized: func(c *gin.Context, code int, message string) {
+				c.JSON(code, gin.H{
+					"code":    code,
+					"message": message,
+				})
+			},
+			TokenLookup:   "header:Authorization",
+			TokenHeadName: "Bearer",
+			TimeFunc:      time.Now,
+		}
+		db.AutoMigrate(&user, &role, &sprint, &project, &backlog)
+
+		r.POST("/login", authMiddleware.LoginHandler)
+		//grouping route for api todos
+		users := v1.Group("/users")
+		users.Use(authMiddleware.MiddlewareFunc())
+		{
+			users.GET("/", ctrl.GetUsers)
+			users.POST("/", ctrl.CreateUser)
+			users.GET("/:id", ctrl.GetUser)
+			users.PUT("/:id", ctrl.UpdateUser)
+			users.DELETE("/:id", ctrl.DeleteUser)
+		}
+
+		roles := v1.Group("/roles")
+		{
+			roles.GET("/", ctrl.GetRoles)
+			roles.GET("/:id", ctrl.GetRole)
+			roles.POST("/", ctrl.PostRole)
+			roles.DELETE("/:id", ctrl.DeleteRole)
+		}
 	}
 
-	roles := router.Group("api/v1/roles")
-	{
-		roles.GET("/", ctrl.GetRoles)
-		roles.GET("/:id", ctrl.GetRole)
-		roles.POST("/", ctrl.PostRole)
-		roles.DELETE("/:id", ctrl.DeleteRole)
-	}
-
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	router.Run() // listen and serve on 0.0.0.0:8080
+	http.ListenAndServe(":"+port, r)
 }
 
 func ConnectMiddleware(db *gorm.DB) gin.HandlerFunc {
@@ -88,4 +125,10 @@ func ConnectMiddleware(db *gorm.DB) gin.HandlerFunc {
 		c.Set("databaseConn", db)
 		c.Next()
 	}
+}
+
+func ping(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong",
+	})
 }

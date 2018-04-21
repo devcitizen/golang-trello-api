@@ -10,7 +10,7 @@ type User struct {
 	Email    string `gorm:"type:varchar(100);unique_index"`
 	Role     Role   `gorm:"foreignkey:RoleID;PRELOAD:true"`
 	RoleID   uint
-	Password string
+	Password string `gorm:"type:varchar(100);"`
 	Address  string `gorm:"index:addr"` // create index with name `addr` for address
 }
 

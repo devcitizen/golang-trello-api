@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
+	"golang.org/x/crypto/bcrypt"
 	validator "gopkg.in/validator.v2"
 )
 
@@ -21,6 +22,7 @@ type (
 		Email     string `gorm:"type:varchar(100);unique_index"`
 		RoleID    int    `validate:"nonzero"`
 		Address   string `validate:"nonzero"`
+		Password  string `validate:"nonzero"`
 		CreatedAt time.Time
 	}
 )
@@ -65,10 +67,28 @@ func CreateUser(c *gin.Context) {
 		}
 
 		db.First(&role, user.RoleID)
+		if err := db.Where("email = ?", user.Email).First(&user).Error; err == nil {
+			c.JSON(http.StatusOK, gin.H{"status": http.StatusNotFound, "message": "Email already taken!"})
+			return
+		}
+
+		password := []byte(user.Password)
+
+		// Hashing the password with the default cost of 10
+		hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+		if err != nil {
+			panic(err)
+		}
+		user.Password = string(hashedPassword)
+
+		// Comparing the password with the hash
+		err = bcrypt.CompareHashAndPassword(hashedPassword, password)
+		fmt.Println(err) // nil means it is a match
+
 		now := time.Now()
 		user.CreatedAt = now
 		if role.ID == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Cannot find role!"})
+			c.JSON(http.StatusOK, gin.H{"status": http.StatusNotFound, "message": "Cannot find role!"})
 			return
 		}
 
