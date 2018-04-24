@@ -8,4 +8,5 @@ type Sprint struct {
 	gorm.Model
 	Name      string
 	ProjectID uint
+	Backlog   []Backlog
 }

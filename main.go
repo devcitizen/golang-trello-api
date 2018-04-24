@@ -27,14 +27,6 @@ var sprint m.Sprint
 var project m.Project
 var backlog m.Backlog
 
-func helloHandler(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	c.JSON(200, gin.H{
-		"userID": claims["id"],
-		"text":   "Hello World.",
-	})
-}
-
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -44,7 +36,7 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:  []string{"http://localhost:3002"},
+		AllowOrigins:  []string{"http://localhost:8081"},
 		AllowMethods:  []string{"PUT", "PATCH", "GET", "POST", "DELETE"},
 		AllowHeaders:  []string{"Origin", "Authorization", "Content-Type", "Access-Control-Allow-Origin", "ID-Company", "ID-Store", "ID-Merchant"},
 		ExposeHeaders: []string{"Content-Length"},
@@ -70,8 +62,8 @@ func main() {
 		authMiddleware := &jwt.GinJWTMiddleware{
 			Realm:      "SAVANNAH",
 			Key:        []byte("secret key"),
-			Timeout:    time.Hour,
-			MaxRefresh: time.Hour,
+			Timeout:    time.Hour * 24,
+			MaxRefresh: time.Hour * 24,
 			Authenticator: func(email string, password string, c *gin.Context) (string, bool) {
 
 				if err := db.Where("email = ?", email).First(&user).Error; err == nil {
@@ -98,8 +90,8 @@ func main() {
 
 		r.POST("/login", authMiddleware.LoginHandler)
 		//grouping route for api todos
+		v1.Use(authMiddleware.MiddlewareFunc())
 		users := v1.Group("/users")
-		users.Use(authMiddleware.MiddlewareFunc())
 		{
 			users.GET("/", ctrl.GetUsers)
 			users.POST("/", ctrl.CreateUser)
@@ -114,6 +106,21 @@ func main() {
 			roles.GET("/:id", ctrl.GetRole)
 			roles.POST("/", ctrl.PostRole)
 			roles.DELETE("/:id", ctrl.DeleteRole)
+		}
+
+		project := v1.Group("/projects")
+		{
+			project.GET("/", ctrl.GetProjects)
+			project.POST("/", ctrl.PostProject)
+			project.GET("/:id", ctrl.GetProject)
+			project.PUT("/:id", ctrl.UpdateProject)
+			project.DELETE("/:id", ctrl.DeleteProject)
+		}
+
+		sprint := v1.Group("/sprints")
+		{
+			sprint.GET("/:id", ctrl.GetSprints)
+			sprint.GET("/:id/backlogs", ctrl.GetSprintBacklog)
 		}
 	}
 
