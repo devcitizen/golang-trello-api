@@ -65,15 +65,14 @@ func main() {
 			Timeout:    time.Hour * 24,
 			MaxRefresh: time.Hour * 24,
 			Authenticator: func(email string, password string, c *gin.Context) (string, bool) {
-
 				if err := db.Where("email = ?", email).First(&user).Error; err == nil {
 					fmt.Println(email)
 					match := u.CheckPasswordHash(password, user.Password)
 					if match {
+						fmt.Println("match")
 						return email, true
 					}
 				}
-
 				return email, false
 			},
 			Unauthorized: func(c *gin.Context, code int, message string) {
@@ -91,36 +90,42 @@ func main() {
 		r.POST("/login", authMiddleware.LoginHandler)
 		//grouping route for api todos
 		v1.Use(authMiddleware.MiddlewareFunc())
-		users := v1.Group("/users")
 		{
-			users.GET("/", ctrl.GetUsers)
-			users.POST("/", ctrl.CreateUser)
-			users.GET("/:id", ctrl.GetUser)
-			users.PUT("/:id", ctrl.UpdateUser)
-			users.DELETE("/:id", ctrl.DeleteUser)
-		}
+			v1.Use(GetAuthUser)
+			{
+				users := v1.Group("/users")
+				{
+					users.GET("/", ctrl.GetUsers)
+					users.POST("/", ctrl.CreateUser)
+					users.GET("/:id", ctrl.GetUser)
+					users.PUT("/:id", ctrl.UpdateUser)
+					users.DELETE("/:id", ctrl.DeleteUser)
+				}
 
-		roles := v1.Group("/roles")
-		{
-			roles.GET("/", ctrl.GetRoles)
-			roles.GET("/:id", ctrl.GetRole)
-			roles.POST("/", ctrl.PostRole)
-			roles.DELETE("/:id", ctrl.DeleteRole)
-		}
+				roles := v1.Group("/roles")
+				{
+					roles.GET("/", ctrl.GetRoles)
+					roles.GET("/:id", ctrl.GetRole)
+					roles.POST("/", ctrl.PostRole)
+					roles.DELETE("/:id", ctrl.DeleteRole)
+				}
 
-		project := v1.Group("/projects")
-		{
-			project.GET("/", ctrl.GetProjects)
-			project.POST("/", ctrl.PostProject)
-			project.GET("/:id", ctrl.GetProject)
-			project.PUT("/:id", ctrl.UpdateProject)
-			project.DELETE("/:id", ctrl.DeleteProject)
-		}
+				project := v1.Group("/projects")
+				{
+					project.GET("/", ctrl.GetProjects)
+					project.POST("/", ctrl.PostProject)
+					project.GET("/:id", ctrl.GetProject)
+					project.PUT("/:id", ctrl.UpdateProject)
+					project.DELETE("/:id", ctrl.DeleteProject)
+				}
 
-		sprint := v1.Group("/sprints")
-		{
-			sprint.GET("/:id", ctrl.GetSprints)
-			sprint.GET("/:id/backlogs", ctrl.GetSprintBacklog)
+				sprint := v1.Group("/sprints")
+				{
+					sprint.GET("/:id", ctrl.GetSprints)
+					sprint.POST("/", ctrl.CreateSprint)
+					sprint.GET("/:id/backlogs", ctrl.GetSprintBacklog)
+				}
+			}
 		}
 	}
 
@@ -138,4 +143,22 @@ func ping(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "pong",
 	})
+}
+
+func GetAuthUser(c *gin.Context) {
+	email, _ := c.Get("userID")
+
+	db, ok := c.MustGet("databaseConn").(*gorm.DB)
+	if !ok {
+		fmt.Println(ok)
+	}
+
+	if err := db.Where("email = ?", email).Find(&user).Error; err != nil {
+		fmt.Println("ok")
+		c.Abort()
+	}
+
+	c.Set("auth", user)
+	c.Set("auth_id", user.Id)
+	c.Next()
 }

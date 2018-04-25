@@ -8,6 +8,6 @@ type Backlog struct {
 	gorm.Model
 	Name     string
 	Detail   string
-	Sprint   Sprint `gorm:"foreignkey:SprintID;PRELOAD:true";nullable`
+	Status   int `gorm:default:0`
 	SprintID uint
 }

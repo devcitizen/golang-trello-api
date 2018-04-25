@@ -6,7 +6,7 @@ import (
 
 type Sprint struct {
 	gorm.Model
-	Name      string
-	ProjectID uint
+	Name      string `json:"name" validate:"nonzero" gorm:"not null"`
+	ProjectID uint   `json:"project_id" validate:"nonzero" gorm:"not null"`
 	Backlog   []Backlog
 }
