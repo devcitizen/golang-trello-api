@@ -1,6 +1,6 @@
 # GOLANG TRELLO API - SAMPLE
 
-this is sample code for trello apps with golang framework(gin-gonic)
+this is sample code for trello API with golang framework(gin-gonic)
 
 ## Getting Started
 
@@ -17,7 +17,7 @@ install golang in your local machine
 
 Look gin-gonic docs [here](https://github.com/gin-gonic/gin)
 
-after installing golang please follow:
+after installing golang please follow :
 
 ```
 clone the repo
@@ -42,7 +42,7 @@ the API run on http://localhost:8080
 
 Login API :
 ```
-$ http -v --json POST localhost:8080/login username=admin password=admin
+$ http -v --json POST localhost:8080/api/v1/users name=admin email=admin@admin.com role_id=0 password=password address=earth
 ```
 
 
