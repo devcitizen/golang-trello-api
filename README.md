@@ -40,9 +40,19 @@ the API run on http://localhost:8080
 
 ### Usage
 
-Login API :
+Create Users Role API :
 ```
-$ http -v --json POST localhost:8080/api/v1/users name=admin email=admin@admin.com role_id=0 password=password address=earth
+$ http -v --json POST localhost:8080/api/v1/roles name=admin
+```
+
+Register User API :
+```
+$ http -v --json POST localhost:8080/api/v1/users name=admin email=admin@admin.com role_id=1 password=password address=earth
+```
+
+Login User API :
+```
+$ http -v --json POST localhost:8080/login email=dmin@admin.com password=password address=earth
 ```
 
 
