@@ -1,6 +1,6 @@
 # GOLANG TRELLO API - SAMPLE
 
-this is sample code for trello apps with golang framework(gon-gonic)
+this is sample code for trello apps with golang framework(gin-gonic)
 
 ## Getting Started
 
